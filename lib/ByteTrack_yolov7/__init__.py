@@ -1,0 +1,1 @@
+from yolov7 import CLS2ID, ID2CLS, DEVICE
