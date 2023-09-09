@@ -249,15 +249,15 @@ def Yolov7_Track(vid_pth: str, save_inference = False):
     if save_inference:
         vid_writer.release()
 
-    tracks, tracks_per_frame = tracker.output_all_tracks()
+    stracks, stracks_per_frame = tracker.output_all_tracks()
     
     with open(str(output_folder) + f"/tracks_vid:{vid_name}.pkl", "wb") as file :
-        pickle.dump(tracks, file)
+        pickle.dump(stracks, file)
     with open(str(output_folder) + f'/tracks_per_frame_vid:{vid_name}.pkl', 'wb') as file:
-        pickle.dump(tracks_per_frame, file)
+        pickle.dump(stracks_per_frame, file)
     logger.info(f"Save tracks to {output_folder}/tracks_vid:{vid_name}.pkl")
     logger.info(f"Save tracks_per_frame to {output_folder}/tracks_per_frame_vid:{vid_name}.pkl")
-    return tracks, tracks_per_frame
+    return stracks, stracks_per_frame
 
 
 if __name__ == "__main__":
