@@ -1,0 +1,16 @@
+conf_thresh: yolov7 bbox should at least be larger than iou_thresh
+
+iou_thresh : yolov7 non maximum suppresssion threshold
+
+
+
+track_thresh : 
+    > thresh => HIGH score bbox; 
+    < thresh => Low score bbox
+ 
+track_buffer : The number shows how many frames unmathed track would be saved into lost list.
+
+match_thresh : It's a boundary which shows whether the current iou_distance is large enough to match a track.
+
+min_box_area : if bbox.area > min_box_area then inference() will draw the bbox.
+
