@@ -1,6 +1,6 @@
 {
-    "output_folder": "/mnt/HDD-500GB/Smog-Car-Detection/Track_Results",
-    "temp_folder": "/mnt/HDD-500GB/Smog-Car-Detection/temp",
+    "output_pth": "/mnt/HDD-500GB/Smog-Car-Detection/Track_Results",
+    "temp_pth": "/mnt/HDD-500GB/Smog-Car-Detection/temp",
     "model_pth": "/mnt/HDD-500GB/Smog-Car-Detection/lib/ByteTrack_yolov7/cfg/yolov7_custom_2.pt",
     "conf_thresh": 0.01,
     "iou_thresh": 0.45,

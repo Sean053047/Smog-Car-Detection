@@ -24,8 +24,8 @@ from byte_config import Parameters as byte_par
 
 VIDOE_EXT = [".avi", ".mp4", ".mkv"]
 
-output_folder = Path(byte_par.output_folder) 
-Path.mkdir(output_folder, exist_ok=True, parents=True)
+output_pth = Path(byte_par.output_pth) 
+Path.mkdir(output_pth, exist_ok=True, parents=True)
 torch.cuda.empty_cache()
 
 # Load model
@@ -110,7 +110,7 @@ def Yolov7_Track(vid_pth: str, save_inference = False):
     
     if save_inference:
         vid_writer = cv.VideoWriter(
-            byte_par.temp_folder + f'/inference_{vid_name}.mp4', cv.VideoWriter_fourcc(*"mp4v"), fps, (int(CAP_IMG_WIDTH), int(CAP_IMG_HEIGHT))
+            byte_par.temp_pth + f'/inference_{vid_name}.mp4', cv.VideoWriter_fourcc(*"mp4v"), fps, (int(CAP_IMG_WIDTH), int(CAP_IMG_HEIGHT))
         )
 
     frame_id = 0
@@ -152,12 +152,12 @@ def Yolov7_Track(vid_pth: str, save_inference = False):
 
     stracks, stracks_per_frame = tracker.output_all_tracks()
     
-    with open(str(output_folder) + f"/tracks:{vid_name}.pkl", "wb") as file :
+    with open(str(output_pth) + f"/tracks:{vid_name}.pkl", "wb") as file :
         pickle.dump(stracks, file)
-    with open(str(output_folder) + f'/tpf:{vid_name}.pkl', 'wb') as file:
+    with open(str(output_pth) + f'/tpf:{vid_name}.pkl', 'wb') as file:
         pickle.dump(stracks_per_frame, file)
-    print(f"Save tracks to {output_folder}/tracks:{vid_name}.pkl")
-    print(f"Save tracks_per_frame to {output_folder}/tpf:{vid_name}.pkl")
+    print(f"Save tracks to {output_pth}/tracks:{vid_name}.pkl")
+    print(f"Save tracks_per_frame to {output_pth}/tpf:{vid_name}.pkl")
     return stracks, stracks_per_frame
 
 
@@ -168,9 +168,9 @@ if __name__ == "__main__":
     vid_pth = "/mnt/HDD-500GB/Smog-Car-Detection/data/SmogCar/SmogCar_1.mp4"
     Yolov7_Track(vid_pth, save_inference=True)
     vid_name = vid_pth.split('/')[-1].split('.')[0]
-    with open(str(byte_par.output_folder) + f"/tracks:{vid_name}.pkl", "rb") as file :
+    with open(str(byte_par.output_pth) + f"/tracks:{vid_name}.pkl", "rb") as file :
         Stracks = pickle.load(file)
-    with open(str(byte_par.output_folder) + f'/tpf:{vid_name}.pkl', 'rb') as file:
+    with open(str(byte_par.output_pth) + f'/tpf:{vid_name}.pkl', 'rb') as file:
         tracks_per_frame = pickle.load(file)
 
     

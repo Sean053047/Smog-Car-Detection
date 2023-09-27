@@ -6,8 +6,8 @@ class Parameters(enumerate):
         Path(__file__).resolve().parent / Path("cfg") / Path("ByteTrack_settings.json")
     )
     attrs = {
-        "output_folder": None,
-        "temp_folder" : None,
+        "output_pth": None,
+        "temp_pth" : None,
         "model_pth": None,
         "conf_thresh": None,
         "iou_thresh" : None,
@@ -17,8 +17,18 @@ class Parameters(enumerate):
         "min_box_area": None,
         "imgsz": None,
         "augment": None,
-        
     }
+    output_pth : str
+    temp_pth : str
+    model_pth :str
+    config_thresh : float
+    iou_thresh : float
+    track_thresh : float
+    track_buffer : int 
+    match_thresh : float
+    min_box_area : int
+    imgsz : int
+    augment : bool 
 
     @classmethod
     def initiate(cls) -> None:
@@ -48,7 +58,7 @@ class Parameters(enumerate):
     def __input_attr(cls, attr):
         while True:
             key = input(f"\rInput {attr} value: ")
-            if attr == "output_folder" or attr == "model_pth" or attr == "temp_folder":
+            if attr == "output_pth" or attr == "model_pth" or attr == "temp_pth":
                 split_list = key.split('/')
                 abs_file_pth = Path(__file__).resolve().parent
                 if len(split_list) == 1:
