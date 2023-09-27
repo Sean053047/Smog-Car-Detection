@@ -1,12 +1,12 @@
 import numpy as np
-from collections import deque
-import copy
-import torch
 import torch.nn.functional as F
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent))
 
-from .kalman_filter import KalmanFilter
-from . import matching
-from .basetrack import BaseTrack, TrackState
+from kalman_filter import KalmanFilter
+import matching
+from basetrack import BaseTrack, TrackState
         
 
 class STrack(BaseTrack):
@@ -155,6 +155,10 @@ class STrack(BaseTrack):
     def __repr__(self):
         return 'OT_{}_({}-{})'.format(self.track_id, self.start_frame, self.end_frame)
 
+    @staticmethod
+    def reset_track_id():
+        STrack.reset_count()
+        
 
 class BYTETracker(object):
     def __init__(self, args, frame_rate=30):

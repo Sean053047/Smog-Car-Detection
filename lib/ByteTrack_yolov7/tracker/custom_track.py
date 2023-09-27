@@ -1,9 +1,11 @@
 import numpy as np
 import sys
 from pathlib import Path
-sys.path.append(Path(__file__).resolve().parent.parent)
+sys.path.append(str(Path(__file__).resolve().parent))
+sys.path.append(str(Path(__file__).resolve().parent.parent))
+
 from yolov7 import ID2CLS
-from .byte_track import STrack
+from byte_track import STrack
 import cv2 as cv
 
 class Track(object):

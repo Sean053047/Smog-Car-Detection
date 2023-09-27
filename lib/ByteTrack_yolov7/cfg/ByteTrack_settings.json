@@ -4,7 +4,7 @@
     "model_pth": "/mnt/HDD-500GB/Smog-Car-Detection/lib/ByteTrack_yolov7/cfg/yolov7_custom_2.pt",
     "conf_thresh": 0.01,
     "iou_thresh": 0.45,
-    "track_thresh": 0.5,
+    "track_thresh": 0.4,
     "track_buffer": 30,
     "match_thresh": 0.75,
     "min_box_area": 0,

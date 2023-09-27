@@ -32,6 +32,10 @@ class BaseTrack(object):
         return self.frame_id
 
     @staticmethod
+    def reset_count():
+        BaseTrack._count = 0 
+
+    @staticmethod
     def next_id():
         BaseTrack._count += 1
         return BaseTrack._count

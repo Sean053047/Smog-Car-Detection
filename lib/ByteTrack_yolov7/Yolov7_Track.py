@@ -1,141 +1,46 @@
 import cv2 as cv
 import torch
-import torch.backends.cudnn as cudnn
-from torch.nn.parallel import DistributedDataParallel as DDP
 
 import numpy as np 
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent))
 
 from yolov7.models.experimental import attempt_load
 from yolov7 import DEVICE, ID2CLS
-from yolov7.utils.datasets import LoadStreams, LoadImages
+from yolov7.utils.datasets import LoadImages
 from yolov7.utils.general import (
     check_img_size,
     non_max_suppression,
-    set_logging,
 )
-from yolov7.utils.plots import plot_one_box
-from yolov7.utils.logger import setup_logger
 from yolov7.utils.datasets import LoadImages
 from tracker import BYTETracker, STrack
-from loguru import logger
 
 import time
 
 import pickle
-from pathlib import Path
-import json
-
-
-class Parameters(enumerate):
-    SETTING_FILE = (
-        Path(__file__).resolve().parent / Path("cfg") / Path("ByteTrack_settings.json")
-    )
-    attrs = {
-        "output_folder": None,
-        "temp_folder" : None,
-        "model_pth": None,
-        "conf_thresh": None,
-        "iou_thresh" : None,
-        "track_thresh": None,
-        "track_buffer": None,
-        "match_thresh": None,
-        "min_box_area": None,
-        "imgsz": None,
-        "augment": None,
-        
-    }
-
-    @classmethod
-    def initiate(cls) -> None:
-        UPDATE = False    
-        if Path(cls.SETTING_FILE).exists():
-            with open(cls.SETTING_FILE, "r") as f:
-                settings = json.load(f)
-            for k, v in settings.items():
-                cls.attrs[k] = v
-                setattr(cls, k, v)
-
-            for k, v in cls.attrs.items():
-                if not hasattr(cls, k):
-                    cls.__input_attr(k)
-                    UPDATE = True
-        else:
-            for attr in cls.attrs.keys():
-                cls.__input_attr(attr)
-                UPDATE =  True
-        if UPDATE:
-            with open(cls.SETTING_FILE, "w") as f:
-                json.dump(cls.attrs, f, indent=4) 
-            print(f"Configure is saved to {cls.SETTING_FILE}")
-            exit()
-
-    @classmethod
-    def __input_attr(cls, attr):
-        while True:
-            key = input(f"\rInput {attr} value: ")
-            if attr == "output_folder" or attr == "model_pth" or attr == "temp_folder":
-                split_list = key.split('/')
-                abs_file_pth = Path(__file__).resolve().parent
-                if len(split_list) == 1:
-                    key = abs_file_pth / Path(split_list[0])
-                else:
-                    for i, sp in enumerate(split_list):
-                        if sp == ".":
-                            pass
-                        elif sp == "..":
-                            abs_file_pth = abs_file_pth.parent
-                        else:
-                            abs_file_pth = abs_file_pth / Path(sp)
-                abs_file_pth = str(abs_file_pth)
-                setattr(cls, attr, abs_file_pth)
-                cls.attrs[attr] = abs_file_pth
-                break
-            elif attr == "augment":
-                key = True if key == "True" else False if key == "False" else None
-                if key == None:
-                    print("augment should be True or False")
-                    continue
-                setattr(cls, attr, key)
-                cls.attrs[attr] = key
-                break
-                    
-            if key.replace(".", "").isnumeric():
-                key = (
-                    int(key)
-                    if attr == "min_box_area"
-                    or attr == "track_buffer"
-                    or attr == "imgsz"
-                    else float(key)
-                )
-                setattr(cls, attr, key)
-                cls.attrs[attr] = key
-                break
-            else:
-                print("You should input digits.\n")
+from config_setting import Parameters as byte_par
 
 
 VIDOE_EXT = [".avi", ".mp4", ".mkv"]
-Parameters.initiate()
 
-output_folder = Path(Parameters.output_folder) 
+output_folder = Path(byte_par.output_folder) 
 Path.mkdir(output_folder, exist_ok=True, parents=True)
 torch.cuda.empty_cache()
-setup_logger(output_folder, filename="val_log.txt")
+
 # Load model
-set_logging()
 device = DEVICE
 
-model = attempt_load(Parameters.model_pth, map_location=DEVICE)  # load FP32 model
+model = attempt_load(byte_par.model_pth, map_location=DEVICE)  # load FP32 model
 
 half = device.type != "cpu"  # half precision only supported on CUDA
 half = False
 if half:
     model.half()
-logger.info("Loading model successfully.")
 
 stride = int(model.stride.max())  # model stride
 names = model.module.names if hasattr(model, "module") else model.names
-imgsz = Parameters.imgsz
+imgsz = byte_par.imgsz
 imgsz = check_img_size(imgsz, s=stride)
 fps = 30 
 old_img_w = old_img_h = imgsz
@@ -172,7 +77,7 @@ def inference(img: np.ndarray , tracks : list[STrack] ,frame_id: int, VideoWrite
     cls_ids = []
     for t in tracks:
         t.determine_cls_id()
-        if t.tlwh[2] * t.tlwh[3] > Parameters.min_box_area:
+        if t.tlwh[2] * t.tlwh[3] > byte_par.min_box_area:
             tlwhs.append(t.tlwh)
             tids.append(t.track_id)
             cls_ids.append(t.cls_id)
@@ -185,14 +90,11 @@ def inference(img: np.ndarray , tracks : list[STrack] ,frame_id: int, VideoWrite
 
     
 
-@logger.catch
 def Yolov7_Track(vid_pth: str, save_inference = False):
     if not "." + vid_pth.split('.')[-1] in VIDOE_EXT:
-        logger.warning("Wrong video type.")
         return []
     else:
-        logger.info("Video type is valid.")
-    
+        pass
     global old_img_b, old_img_h, old_img_w
 
     datasets = LoadImages(vid_pth, img_size=imgsz, stride=stride)
@@ -208,12 +110,12 @@ def Yolov7_Track(vid_pth: str, save_inference = False):
     
     if save_inference:
         vid_writer = cv.VideoWriter(
-            Parameters.temp_folder + f'/inference_{vid_name}_{timestamp}.mp4', cv.VideoWriter_fourcc(*"mp4v"), fps, (int(CAP_IMG_WIDTH), int(CAP_IMG_HEIGHT))
+            byte_par.temp_folder + f'/inference_{vid_name}.mp4', cv.VideoWriter_fourcc(*"mp4v"), fps, (int(CAP_IMG_WIDTH), int(CAP_IMG_HEIGHT))
         )
 
     frame_id = 0
 
-    tracker = BYTETracker(Parameters, frame_rate=30)
+    tracker = BYTETracker(byte_par, frame_rate=30)
     
     for path, img, cap_img, vid_cap in datasets:
         img = torch.from_numpy(img).to(device)
@@ -232,57 +134,48 @@ def Yolov7_Track(vid_pth: str, save_inference = False):
             old_img_h = img.shape[2]
             old_img_w = img.shape[3]
             for i in range(3):
-                model(img, augment=Parameters.augment)[0]
+                model(img, augment=byte_par.augment)[0]
         
         with torch.no_grad():
-            pred = model(img, augment = Parameters.augment)[0]
-        
-        pred = non_max_suppression(pred, Parameters.conf_thresh, Parameters.iou_thresh)[0]
+            pred = model(img, augment = byte_par.augment)[0]
+        pred = non_max_suppression(pred, byte_par.conf_thresh, byte_par.iou_thresh)[0]
         current_tracks = tracker.update(pred, [CAP_IMG_HEIGHT, CAP_IMG_WIDTH], (old_img_h, old_img_w))
         
         if save_inference:
             inference(cap_img, current_tracks, frame_id, vid_writer)
         frame_id += 1
         if frame_id % 200 == 0:
-            logger.info(f"Have processed  {frame_id} frames.")
+            print(f"Have processed  {frame_id} frames.")
     
     if save_inference:
         vid_writer.release()
 
     stracks, stracks_per_frame = tracker.output_all_tracks()
     
-    with open(str(output_folder) + f"/tracks_vid:{vid_name}.pkl", "wb") as file :
+    with open(str(output_folder) + f"/tracks:{vid_name}.pkl", "wb") as file :
         pickle.dump(stracks, file)
-    with open(str(output_folder) + f'/tracks_per_frame_vid:{vid_name}.pkl', 'wb') as file:
+    with open(str(output_folder) + f'/tpf:{vid_name}.pkl', 'wb') as file:
         pickle.dump(stracks_per_frame, file)
-    logger.info(f"Save tracks to {output_folder}/tracks_vid:{vid_name}.pkl")
-    logger.info(f"Save tracks_per_frame to {output_folder}/tracks_per_frame_vid:{vid_name}.pkl")
+    print(f"Save tracks to {output_folder}/tracks:{vid_name}.pkl")
+    print(f"Save tracks_per_frame to {output_folder}/tpf:{vid_name}.pkl")
     return stracks, stracks_per_frame
 
 
 if __name__ == "__main__":
-    vid_pth = "/mnt/HDD-500GB/Smog-Car-Detection/data/car.mp4"
-    Yolov7_Track(vid_pth, True)
     
-    with open(str(output_folder) + f"/tracks_vid:car.pkl", "rb") as file :
+    from config_setting import Parameters as byte_par
+    from tracker import Track, STracks2Tracks, update_tracks_per_frame
+    
+    vid_pth = "/mnt/HDD-500GB/Smog-Car-Detection/data/SmogCar/SmogCar_1.mp4"
+    Yolov7_Track(vid_pth, save_inference=True)
+    vid_name = vid_pth.split('/')[-1].split('.')[0]
+    with open(str(byte_par.output_folder) + f"/tracks:{vid_name}.pkl", "rb") as file :
         Stracks = pickle.load(file)
-    with open(str(output_folder) + f'/tracks_per_frame_vid:car.pkl', 'rb') as file:
+    with open(str(byte_par.output_folder) + f'/tpf:{vid_name}.pkl', 'rb') as file:
         tracks_per_frame = pickle.load(file)
 
-    from tracker.custom_track import Track, STracks2Tracks, update_tracks_per_frame
-    from tracker.custom_track import inference as cs_inf
+    
     tracks:list[Track] = STracks2Tracks(Stracks)
     tracks_per_frame:dict[int:list[Track]] = update_tracks_per_frame(tracks , tracks_per_frame)
     
-    cap = cv.VideoCapture(vid_pth)
-    _, image = cap.read()
-    CAP_IMG_HEIGHT, CAP_IMG_WIDTH = image.shape[:2] 
-    cap.release()
-    
-    vid_writer = cv.VideoWriter(
-            Parameters.temp_folder + f'/inference_test.mp4', cv.VideoWriter_fourcc(*"mp4v"), fps, (int(CAP_IMG_WIDTH), int(CAP_IMG_HEIGHT))
-        )
-    cs_inf(vid_pth, tracks_per_frame, vid_writer)
-    
-
     
