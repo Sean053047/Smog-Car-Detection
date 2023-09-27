@@ -1,4 +1,0 @@
-INTERVAL = 3
-OT_EXTEND_RATIO = 0.3 # Should be smaller than 1
-WITDH_MIN = 100
-HEIGHT_MIN = 100
