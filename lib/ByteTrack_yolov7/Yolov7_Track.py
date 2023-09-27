@@ -19,7 +19,7 @@ from tracker import BYTETracker, STrack
 import time
 
 import pickle
-from config_setting import Parameters as byte_par
+from byte_config import Parameters as byte_par
 
 
 VIDOE_EXT = [".avi", ".mp4", ".mkv"]
@@ -163,7 +163,6 @@ def Yolov7_Track(vid_pth: str, save_inference = False):
 
 if __name__ == "__main__":
     
-    from config_setting import Parameters as byte_par
     from tracker import Track, STracks2Tracks, update_tracks_per_frame
     
     vid_pth = "/mnt/HDD-500GB/Smog-Car-Detection/data/SmogCar/SmogCar_1.mp4"
