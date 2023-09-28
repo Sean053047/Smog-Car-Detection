@@ -1,7 +1,3 @@
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent.parent))  # to run '$ python *.py' files in subdirectories
-
 import math
 from copy import copy
 from pathlib import Path

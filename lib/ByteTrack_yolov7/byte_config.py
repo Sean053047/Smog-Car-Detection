@@ -5,6 +5,9 @@ class Parameters(enumerate):
     SETTING_FILE = (
         Path(__file__).resolve().parent / Path("cfg") / Path("ByteTrack_settings.json")
     )
+    OT_TYPE_FILE = (
+        Path(__file__).resolve().parent / Path("cfg") / Path("OT-type.json")
+    )
     attrs = {
         "output_pth": None,
         "temp_pth" : None,
@@ -18,6 +21,8 @@ class Parameters(enumerate):
         "imgsz": None,
         "augment": None,
     }
+    CLS2ID : dict
+    ID2CLS : dict
     output_pth : str
     temp_pth : str
     model_pth :str
@@ -33,20 +38,31 @@ class Parameters(enumerate):
     @classmethod
     def initiate(cls) -> None:
         UPDATE = False    
+        if Path(cls.OT_TYPE_FILE).exists():
+            with open(str(cls.OT_TYPE_FILE), 'r') as f:
+                cls.CLS2ID:dict = json.load(f)
+            cls.ID2CLS = { v:k for k,v in cls.CLS2ID.items()}
+        else:
+            print("Can't find out the OT-type.json")
+            exit()
         if Path(cls.SETTING_FILE).exists():
             with open(cls.SETTING_FILE, "r") as f:
                 settings = json.load(f)
-            for k, v in settings.items():
-                cls.attrs[k] = v
-                setattr(cls, k, v)
-
-            for k, v in cls.attrs.items():
-                if not hasattr(cls, k):
-                    cls.__input_attr(k)
+            for attr, v in settings.items():
+                setattr(cls, attr, v)
+                cls.attrs[attr] = v
+                
+            for attr in cls.attrs.keys():
+                if not hasattr(cls, attr):
+                    result = cls.__input_attr(attr)
+                    setattr(cls, attr, result)
+                    cls.attrs[attr] = result
                     UPDATE = True
         else:
             for attr in cls.attrs.keys():
-                cls.__input_attr(attr)
+                result = cls.__input_attr(attr)
+                setattr(cls, attr, result)
+                cls.attrs[attr] = result
                 UPDATE =  True
         if UPDATE:
             with open(cls.SETTING_FILE, "w") as f:
@@ -71,17 +87,14 @@ class Parameters(enumerate):
                             abs_file_pth = abs_file_pth.parent
                         else:
                             abs_file_pth = abs_file_pth / Path(sp)
-                abs_file_pth = str(abs_file_pth)
-                setattr(cls, attr, abs_file_pth)
-                cls.attrs[attr] = abs_file_pth
+                result = str(abs_file_pth)
                 break
             elif attr == "augment":
                 key = True if key == "True" else False if key == "False" else None
                 if key == None:
                     print("augment should be True or False")
                     continue
-                setattr(cls, attr, key)
-                cls.attrs[attr] = key
+                result = key 
                 break
                     
             if key.replace(".", "").isnumeric():
@@ -92,11 +105,10 @@ class Parameters(enumerate):
                     or attr == "imgsz"
                     else float(key)
                 )
-                setattr(cls, attr, key)
-                cls.attrs[attr] = key
+                result = key
                 break
             else:
                 print("You should input digits.\n")
-
+        return result
 
 Parameters.initiate()

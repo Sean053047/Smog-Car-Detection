@@ -4,9 +4,11 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent))
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from yolov7 import ID2CLS
 from byte_track import STrack
 import cv2 as cv
+
+from byte_config import Parameters as byte_par
+ID2CLS = byte_par.ID2CLS
 
 class Track(object):
     def __init__(self, tid, cls_id, start_frame, end_frame, bboxes) -> None:
@@ -15,23 +17,31 @@ class Track(object):
         self.start_frame:int = start_frame
         self.end_frame:int = end_frame
         self.bboxes: dict[np.ndarray] = bboxes
+        self.svm_preds : dict[int:int] = dict()
 
     def __repr__(self) -> str:
         return "OT_{}_{}_({}-{})".format(self.tid, ID2CLS[self.cls_id], self.start_frame, self.end_frame)
     
 
-def STracks2Tracks(Stracks: list[STrack], 
-):
+def STracks2Tracks(Stracks: list[STrack], filter_out:bool = True, min_showing_times:int = 10):
+    '''Goal : Turn STracks to customized Tracks
+    par: 
+    1.  Stracks: list[STrack]
+    2.  filter_out: bool, default = True; 
+        When it was true, it will filter out the STrack with showing times less than min_times
+    3.  min_times: int, default = 5;
+        Means the minimum times which each STrack should have at least min_times.'''
     tracks = []
     for t in Stracks:
-        tid = t.track_id
-        cls_id = t.cls_id
         start_frame = t.start_frame
         end_frame = t.end_frame
+        if filter_out and (end_frame-start_frame) < min_showing_times:
+            continue
+        tid = t.track_id
+        cls_id = t.cls_id
         bboxes = t.bboxes
         track = Track(tid, cls_id, start_frame, end_frame, bboxes)
         tracks.append(track)
-    
     return tracks
 
 def update_tracks_per_frame(tracks:list[Track], tracks_per_frame) ->dict[int:list[Track]]:
@@ -43,7 +53,11 @@ def update_tracks_per_frame(tracks:list[Track], tracks_per_frame) ->dict[int:lis
                 if t.tid == tid:
                     new_tracks_per_frame[k].append(t)
                     break
+    for i, t in enumerate(tracks,start=1):
+        t.tid = i
+    
     return new_tracks_per_frame
+
 
 def inference(vid_pth, tracks_per_frame, vid_writer):
     def get_color(idx):

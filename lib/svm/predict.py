@@ -2,10 +2,11 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent))
 import joblib
+import cv2 as cv 
 import numpy as np
 
-from skimage.transform import resize
 from sklearn import svm
+from skimage.transform import resize
 from sklearn.preprocessing import StandardScaler
 from Transformer import HogTransformer
 from svm_config import Parameters
@@ -19,7 +20,7 @@ width_min = Parameters.training_info["width_min"]
 height_min = Parameters.training_info["height_min"]
 
 
-def predict(image:np.ndarray)-> int:
+def predict_image(image:np.ndarray)-> int:
     ''' Image : np.ndarray (bgr)'''
     im_height , im_width = image.shape[:2]
     if im_width < width_min or im_height < height_min:
@@ -63,7 +64,7 @@ if __name__ == "__main__":
                     print("Image is too small to predict.")
                     continue
                     
-                pred = predict(image)
+                pred = predict_image(image)
                 if pred >= 1 :
                     pred_smoke.add(file.name)
                 else:

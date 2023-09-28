@@ -2,12 +2,12 @@ import numpy as np
 import random
 import torch
 import torch.nn as nn
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).resolve().parent.parent))  # to run '$ python *.py' files in subdirectories
 
-from models.common import Conv, DWConv
+import sys 
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent))
 from utils.google_utils import attempt_download
+from models.common import Conv, DWConv
 
 
 class CrossConv(nn.Module):

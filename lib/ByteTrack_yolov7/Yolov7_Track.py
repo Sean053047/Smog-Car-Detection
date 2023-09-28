@@ -1,26 +1,22 @@
-import cv2 as cv
 import torch
-
+import cv2 as cv
 import numpy as np 
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent))
 
 from yolov7.models.experimental import attempt_load
-from yolov7 import DEVICE, ID2CLS
 from yolov7.utils.datasets import LoadImages
 from yolov7.utils.general import (
     check_img_size,
     non_max_suppression,
 )
-from yolov7.utils.datasets import LoadImages
 from tracker import BYTETracker, STrack
-
 import time
 
 import pickle
 from byte_config import Parameters as byte_par
-
+ID2CLS = byte_par.ID2CLS
 
 VIDOE_EXT = [".avi", ".mp4", ".mkv"]
 
@@ -29,9 +25,9 @@ Path.mkdir(output_pth, exist_ok=True, parents=True)
 torch.cuda.empty_cache()
 
 # Load model
-device = DEVICE
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-model = attempt_load(byte_par.model_pth, map_location=DEVICE)  # load FP32 model
+model = attempt_load(byte_par.model_pth, map_location=device)  # load FP32 model
 
 half = device.type != "cpu"  # half precision only supported on CUDA
 half = False
@@ -58,7 +54,7 @@ def plot_tracking(image, tlwhs, obj_ids, cls_ids, frame_id=0, fps=0.):
     text_thickness = 2
     line_thickness = 3
 
-    cv.putText(im, 'frame: %d fps: %.2f num: %d' % (frame_id, fps, len(tlwhs)),
+    cv.putText(im, 'frame: %d  num: %d' % (frame_id, len(tlwhs)),
                 (0, int(15  * text_scale)), cv.FONT_HERSHEY_PLAIN, 2, (0, 0, 255), thickness=2)
 
     for tlwh, obj_id, cls_id  in zip(tlwhs, obj_ids, cls_ids):
@@ -100,7 +96,7 @@ def Yolov7_Track(vid_pth: str, save_inference = False):
     datasets = LoadImages(vid_pth, img_size=imgsz, stride=stride)
     
     current_time = time.localtime()
-    timestamp = time.strftime("%Y_%m_%d_%H_%M_%S", current_time)
+    # timestamp = time.strftime("%Y_%m_%d_%H_%M_%S", current_time)
     vid_name = vid_pth.split('/')[-1].split('.')[0]
     
     cap = cv.VideoCapture(vid_pth)
@@ -140,7 +136,7 @@ def Yolov7_Track(vid_pth: str, save_inference = False):
             pred = model(img, augment = byte_par.augment)[0]
         pred = non_max_suppression(pred, byte_par.conf_thresh, byte_par.iou_thresh)[0]
         current_tracks = tracker.update(pred, [CAP_IMG_HEIGHT, CAP_IMG_WIDTH], (old_img_h, old_img_w))
-        
+
         if save_inference:
             inference(cap_img, current_tracks, frame_id, vid_writer)
         frame_id += 1
@@ -152,12 +148,12 @@ def Yolov7_Track(vid_pth: str, save_inference = False):
 
     stracks, stracks_per_frame = tracker.output_all_tracks()
     
-    with open(str(output_pth) + f"/tracks:{vid_name}.pkl", "wb") as file :
+    with open(str(output_pth) + f"/stracks:{vid_name}.pkl", "wb") as file :
         pickle.dump(stracks, file)
-    with open(str(output_pth) + f'/tpf:{vid_name}.pkl', 'wb') as file:
+    with open(str(output_pth) + f'/stpf:{vid_name}.pkl', 'wb') as file:
         pickle.dump(stracks_per_frame, file)
-    print(f"Save tracks to {output_pth}/tracks:{vid_name}.pkl")
-    print(f"Save tracks_per_frame to {output_pth}/tpf:{vid_name}.pkl")
+    print(f"Save stracks to {output_pth}/stracks:{vid_name}.pkl")
+    print(f"Save stracks_per_frame to {output_pth}/stpf:{vid_name}.pkl")
     return stracks, stracks_per_frame
 
 
@@ -168,9 +164,9 @@ if __name__ == "__main__":
     vid_pth = "/mnt/HDD-500GB/Smog-Car-Detection/data/SmogCar/SmogCar_1.mp4"
     Yolov7_Track(vid_pth, save_inference=True)
     vid_name = vid_pth.split('/')[-1].split('.')[0]
-    with open(str(byte_par.output_pth) + f"/tracks:{vid_name}.pkl", "rb") as file :
+    with open(str(byte_par.output_pth) + f"/stracks:{vid_name}.pkl", "rb") as file :
         Stracks = pickle.load(file)
-    with open(str(byte_par.output_pth) + f'/tpf:{vid_name}.pkl', 'rb') as file:
+    with open(str(byte_par.output_pth) + f'/stpf:{vid_name}.pkl', 'rb') as file:
         tracks_per_frame = pickle.load(file)
 
     
