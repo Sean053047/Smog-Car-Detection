@@ -3,11 +3,11 @@
     "temp_pth": "/mnt/HDD-500GB/Smog-Car-Detection/temp",
     "model_pth": "/mnt/HDD-500GB/Smog-Car-Detection/lib/ByteTrack_yolov7/cfg/OT.pt",
     "conf_thresh": 0.01,
-    "iou_thresh": 0.45,
+    "iou_thresh": 0.65,
     "track_thresh": 0.5,
     "track_buffer": 30,
     "match_thresh": 0.7,
     "min_box_area": 0,
     "imgsz": 640,
-    "augment": false
+    "augment": 0
 }

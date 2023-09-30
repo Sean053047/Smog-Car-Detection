@@ -1,8 +1,0 @@
-{
-    "FRAME_INTERVAL": 3,
-    "OT_EXTEND_RATIO": 0.3,
-    "WIDTH_MIN": 100,
-    "HEIGHT_MIN": 100,
-    "LicenseModel_pth": "/mnt/HDD-500GB/Smog-Car-Detection/lib/tools/cfg/license_plate.pt",
-    "SmokeModel_pth": "/mnt/HDD-500GB/Smog-Car-Detection/lib/tools/cfg/SmokeModel.pt"
-}

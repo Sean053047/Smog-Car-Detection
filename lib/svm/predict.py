@@ -9,15 +9,15 @@ from sklearn import svm
 from skimage.transform import resize
 from sklearn.preprocessing import StandardScaler
 from Transformer import HogTransformer
-from svm_config import Parameters
+from svm_config import Parameters as svm_par
 
-scalify:StandardScaler = joblib.load(Parameters.Scalify_pth)
-hogify:HogTransformer = joblib.load(Parameters.Hogify_pth)
-svm_clf:svm.SVC = joblib.load(Parameters.Svm_pth)
-width = Parameters.training_info["width"]
-height = Parameters.training_info["height"]
-width_min = Parameters.training_info["width_min"]
-height_min = Parameters.training_info["height_min"]
+scalify:StandardScaler = joblib.load(svm_par.Scalify_pth)
+hogify:HogTransformer = joblib.load(svm_par.Hogify_pth)
+svm_clf:svm.SVC = joblib.load(svm_par.Svm_pth)
+width = svm_par.Training_info.width
+height = svm_par.Training_info.height
+width_min = svm_par.Training_info.width_min
+height_min = svm_par.Training_info.height_min
 
 
 def predict_image(image:np.ndarray)-> int:
