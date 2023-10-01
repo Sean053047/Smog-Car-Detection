@@ -4,11 +4,12 @@ sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
 from lib.utils.Base_config import BaseAttrs
 
 class License(BaseAttrs):
-    attrs = ["model_pth", "imgsz", "conf_thresh", "iou_thresh"]
+    attrs = ["model_pth", "imgsz", "license_conf_thresh", "iou_thresh", "area_ratio_thresh"]
     model_pth: str
     imgsz: int
-    conf_thresh : float
+    license_conf_thresh : float
     iou_thresh : float
+    area_ratio_thresh: float
     
 class Smoke(BaseAttrs):
     attrs = ["model_pth","OT_EXTEND_RATIO", "SVM_WIDTH_MIN", "SVM_HEIGHT_MIN"]
