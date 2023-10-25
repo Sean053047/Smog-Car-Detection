@@ -17,11 +17,11 @@ import time
 
 import pickle
 from byte_config import Parameters as byte_par
-
+from byte_config import Common
 ID2CLS = byte_par.ID2CLS
 VIDOE_EXT = [".avi", ".mp4", ".mkv"]
 
-output_pth = Path(byte_par.output_pth)
+output_pth = Path(Common.track_results_pth)
 Path.mkdir(output_pth, exist_ok=True, parents=True)
 torch.cuda.empty_cache()
 
@@ -110,14 +110,13 @@ def Yolov7_Track(vid_pth: str, save_inference=False):
 
     if save_inference:
         vid_writer = cv.VideoWriter(
-            byte_par.temp_pth + f"/inference_{vid_name}.mp4",
+            Common.temp_pth + f"/inference_{vid_name}.mp4",
             cv.VideoWriter_fourcc(*"mp4v"),
             fps,
             (int(CAP_IMG_WIDTH), int(CAP_IMG_HEIGHT)),
         )
 
     frame_id = 0
-
     tracker = BYTETracker(byte_par, frame_rate=30)
     
     for path, img, cap_img, vid_cap in datasets:
@@ -169,12 +168,14 @@ def Yolov7_Track(vid_pth: str, save_inference=False):
 if __name__ == "__main__":
     from tracker import Track, STracks2Tracks, update_tracks_per_frame
     t = time.time()
-    vid_pth = "/mnt/HDD-500GB/Smog-Car-Detection/data/SmogCar/SmogCar_1.mp4"
+    vid_pth = "/mnt/HDD-500GB/Smog-Car-Detection/data/SmogCar/SmogCar_15.mp4"
     Yolov7_Track(vid_pth, save_inference=True)
     vid_name = vid_pth.split("/")[-1].split(".")[0]
-    with open(str(byte_par.output_pth) + f"/stracks:{vid_name}.pkl", "rb") as file:
+
+
+    with open(str(output_pth) + f"/stracks:{vid_name}.pkl", "rb") as file:
         Stracks = pickle.load(file)
-    with open(str(byte_par.output_pth) + f"/stpf:{vid_name}.pkl", "rb") as file:
+    with open(str(output_pth) + f"/stpf:{vid_name}.pkl", "rb") as file:
         tracks_per_frame = pickle.load(file)
 
     tracks: list[Track] = STracks2Tracks(Stracks)

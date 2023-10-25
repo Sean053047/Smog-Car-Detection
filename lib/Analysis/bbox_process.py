@@ -5,9 +5,9 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 # ? 1. Import customized Transformer first. At this time, __main__ module knows that transformer.
 # ? 2. Then, import predict_image to load module. Because it already knows the customized transformer, it won't raise a AttributeError to load module.
-from svm.Transformer import HogTransformer
-from svm.predict import predict_image as svm_predict
-from sklearn.svm import SVC
+# from svm.Transformer import HogTransformer
+# from svm.predict import predict_image as svm_predict
+# from sklearn.svm import SVC
 
 import numpy as np
 import torch
@@ -40,6 +40,10 @@ def crop_image(image: np.ndarray, bbox: np.ndarray):
     x1, y1, x2, y2 = tuple(map(int, bbox))
     return image[y1:y2, x1:x2 ,:]
 
+def box_area(box):
+        # box = 4xn
+        return (box[2] - box[0]) * (box[3] - box[1])
+
 def box_area_ratio(box1, box2):
     """
     Return area ratio of intersection-over-box1 (Jaccard index) between two sets of boxes.
@@ -52,10 +56,6 @@ def box_area_ratio(box1, box2):
         Tensor[N, M]: the NxM matrix containing the pairwise area ratio values
         for every element in boxes1 and boxes2
     """
-    def box_area(box):
-        # box = 4xn
-        return (box[2] - box[0]) * (box[3] - box[1])
-
     area1 = box_area(box1.T)
     inter = (torch.min(box1[:, None, 2:], box2[:, 2:]) - torch.max(box1[:, None, :2], box2[:, :2])).clamp(0).prod(2)
     area_ratio = inter / area1[:, None]
@@ -83,3 +83,15 @@ def box_center_distance(box1, box2):
     # The distance between boxes' centers squared.
     centers_distance_squared = ((x_p - x_g) ** 2 + (y_p - y_g) ** 2) **(1/2)
     return centers_distance_squared
+
+def get_center_point(box, shift_y=0.5, shift_x=0.5):
+
+    cent_x = box[:, None, 0]*(1-shift_x) + box[:, None, 2]*shift_x
+    cent_y = box[:, None, 1]*(1-shift_y) + box[:, None, 3]*shift_y
+    return torch.cat((cent_x, cent_y), dim=1) 
+     
+
+def bbox_diagnol_distance(box):
+    
+    diag = ((box[:, 0]-box[:,2])**2 + (box[:,1]- box[:,3]))**(1/2)
+    return diag

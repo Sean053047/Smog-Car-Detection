@@ -18,9 +18,9 @@ sys.path.append(str(Path(__file__).resolve().parent))
 from Transformer import HogTransformer
 
 import json
-
-
 import random
+label_folder = Path(__file__).resolve().parent.parent.parent / Path("data/Crop_Car/label")
+    
 class Augmentation():
 
 
@@ -64,16 +64,16 @@ def resize_all(src, pklname, width=150, height=None, AUG=False, vals=None):
     include: set[str]
         set containing str
     """
+    global label_folder
 
     height = height if height is not None else width
-
     data = dict()
     data['description'] = 'resized ({0}x{1})SIGN images in rgb'.format(
         int(width), int(height))
     data['label'] = []
     data['filename'] = []
     data['data'] = []
-    with open('./Crop_Car/label/annotation.json', 'r') as f:
+    with open(f'{label_folder}/annotation.json', 'r') as f:
         labels_dict = json.load(f)
     pklname = f"{pklname}_{width}px.pkl"
     os.makedirs('./pkl_folder', exist_ok=True)
@@ -104,11 +104,12 @@ def resize_all(src, pklname, width=150, height=None, AUG=False, vals=None):
 
 
 if __name__ =='__main__':
+    from pathlib import Path
     '''IMAGE is RGB'''
     random.seed(32)
     np.random.seed(64)
     width = 150 # ? It is the size of image after resized.
-    all_vids = {f"./Crop_Car/label/SmogCar_{i}" for i in range(1,17)}
+    all_vids = {f"{label_folder}/SmogCar_{i}" for i in range(1,17)}
     txt = open('validation_record.txt', 'w') 
     for _ in range(12):
         training_set = random.sample(all_vids, 12)

@@ -106,7 +106,6 @@ class STrack(BaseTrack):
         ret[:2] -= ret[2:] / 2
         return ret
     
-    
     def determine_cls_id(self):
         self.cls_id = max( self.cls_ids, key = self.cls_ids.count)
     

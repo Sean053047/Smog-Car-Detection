@@ -1,0 +1,16 @@
+{
+    "Hogify_pth": "/mnt/HDD-500GB/Smog-Car-Detection/lib/svm/model/SmokeHogify_150.pkl",
+    "Scalify_pth": "/mnt/HDD-500GB/Smog-Car-Detection/lib/svm/model/SmokeScalify_150.pkl",
+    "Svm_pth": "/mnt/HDD-500GB/Smog-Car-Detection/lib/svm/model/SmokeModel_150.pkl",
+    "Training_info": {
+        "width": 150,
+        "height": 150,
+        "width_min": 100,
+        "height_min": 100,
+        "num_label": 2,
+        "label": {
+            "no-smoke": 0,
+            "smoke": 1
+        }
+    }
+}

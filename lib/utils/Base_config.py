@@ -10,7 +10,7 @@ class BaseAttrs:
         attrs : list[str]
     Optional : 
         SETTING_FILE : str => (When you define Parameters, it is necessary.)'''
-    SETTING_FILE = ""
+    SETTING_FILE :str = ""
     attrs = list()
 
     UPDATE : bool
@@ -22,6 +22,7 @@ class BaseAttrs:
         cls.UPDATE = False
         cls.already_load = set()    
         cls.file_classes = {cls_name:cls_obj for cls_name, cls_obj in inspect.getmembers(modules[module_name]) if inspect.isclass(cls_obj)}
+        cls.SETTING_FILE = str(cls.SETTING_FILE)
         if cls.SETTING_FILE != "":
             if Path(cls.SETTING_FILE).exists():
                 with open(cls.SETTING_FILE, "r") as f:
@@ -31,11 +32,12 @@ class BaseAttrs:
         elif attrs_dict is None:
             attrs_dict = dict()
         
+        
         for attr, v in attrs_dict.items():
             if attr in cls.file_classes:
                 new_cls = cls.file_classes[attr]
                 setattr(cls, attr, new_cls)
-                cls.UPDATE = cls.UPDATE or new_cls.initiate(v)
+                cls.UPDATE =  new_cls.initiate(v) or cls.UPDATE
             else:
                 setattr(cls, attr, v)
             cls.already_load.add(attr)
