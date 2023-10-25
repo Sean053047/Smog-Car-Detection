@@ -1,0 +1,23 @@
+{
+    "frame_interval": 3,
+    "cut_frame_thresh": 270,
+    "shift_frame_ratio": 0.1667,
+    "Smoke": {
+        "model_pth": "/mnt/HDD-500GB/Smog-Car-Detection/lib/Analysis/model/smog_only.pt",
+        "SVM_WIDTH_MIN": 100,
+        "SVM_HEIGHT_MIN": 100,
+        "imgsz": 640,
+        "conf_thresh": 0.4,
+        "iou_thresh": 0.65,
+        "augment": 0,
+        "OT_EXTEND_RATIO": 0.3
+    },
+    "License": {
+        "model_pth": "/mnt/HDD-500GB/Smog-Car-Detection/lib/Analysis/model/plate_only_3.pt",
+        "imgsz": 640,
+        "conf_thresh": 0.6,
+        "iou_thresh": 0.65,
+        "area_ratio_thresh": 0.6,
+        "augment": 0
+    }
+}

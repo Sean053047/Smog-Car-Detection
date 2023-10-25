@@ -1,92 +1,60 @@
+import sys
 from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
+from lib.utils.Base_config import BaseAttrs
 import json
 
-class Parameters(enumerate):
-    SETTING_FILE = (
-        Path(__file__).resolve().parent / Path("cfg") / Path("ByteTrack_settings.json")
+project_pth = Path(__file__).resolve().parent.parent.parent
+
+class Parameters(BaseAttrs):
+    SETTING_FILE = str(
+        project_pth / Path("cfg") / Path("ByteTrack_settings.json")
     )
-    attrs = {
-        "output_folder": None,
-        "temp_folder" : None,
-        "model_pth": None,
-        "conf_thresh": None,
-        "iou_thresh" : None,
-        "track_thresh": None,
-        "track_buffer": None,
-        "match_thresh": None,
-        "min_box_area": None,
-        "imgsz": None,
-        "augment": None,
-        
-    }
+    attrs = [
+        "model_pth",
+        "conf_thresh",
+        "iou_thresh",
+        "track_thresh",
+        "track_buffer",
+        "match_thresh",
+        "min_box_area",
+        "imgsz",
+        "augment"
+    ]
+    model_pth : str
+    conf_thresh : float 
+    iou_thresh : float
+    track_thresh : float
+    track_buffer : int
+    match_thresh : float 
+    min_box_area : int 
+    imgsz : int
+    augment : int
 
+    OT_TYPE_FILE = Path(__file__).resolve().parent / Path("model") / Path("OT-type.json")
     @classmethod
-    def initiate(cls) -> None:
-        UPDATE = False    
-        if Path(cls.SETTING_FILE).exists():
-            with open(cls.SETTING_FILE, "r") as f:
-                settings = json.load(f)
-            for k, v in settings.items():
-                cls.attrs[k] = v
-                setattr(cls, k, v)
-
-            for k, v in cls.attrs.items():
-                if not hasattr(cls, k):
-                    cls.__input_attr(k)
-                    UPDATE = True
+    def load_OT_type(cls):
+        if cls.OT_TYPE_FILE.exists() : 
+            with open(str(cls.OT_TYPE_FILE), 'r') as f:
+                cls.CLS2ID = json.load(f)
+                cls.ID2CLS = { v:k for k,v in cls.CLS2ID.items()}
         else:
-            for attr in cls.attrs.keys():
-                cls.__input_attr(attr)
-                UPDATE =  True
-        if UPDATE:
-            with open(cls.SETTING_FILE, "w") as f:
-                json.dump(cls.attrs, f, indent=4) 
-            print(f"Configure is saved to {cls.SETTING_FILE}")
+            print("OT_TYPE setting file doesn't exist.")
             exit()
 
-    @classmethod
-    def __input_attr(cls, attr):
-        while True:
-            key = input(f"\rInput {attr} value: ")
-            if attr == "output_folder" or attr == "model_pth" or attr == "temp_folder":
-                split_list = key.split('/')
-                abs_file_pth = Path(__file__).resolve().parent
-                if len(split_list) == 1:
-                    key = abs_file_pth / Path(split_list[0])
-                else:
-                    for i, sp in enumerate(split_list):
-                        if sp == ".":
-                            pass
-                        elif sp == "..":
-                            abs_file_pth = abs_file_pth.parent
-                        else:
-                            abs_file_pth = abs_file_pth / Path(sp)
-                abs_file_pth = str(abs_file_pth)
-                setattr(cls, attr, abs_file_pth)
-                cls.attrs[attr] = abs_file_pth
-                break
-            elif attr == "augment":
-                key = True if key == "True" else False if key == "False" else None
-                if key == None:
-                    print("augment should be True or False")
-                    continue
-                setattr(cls, attr, key)
-                cls.attrs[attr] = key
-                break
-                    
-            if key.replace(".", "").isnumeric():
-                key = (
-                    int(key)
-                    if attr == "min_box_area"
-                    or attr == "track_buffer"
-                    or attr == "imgsz"
-                    else float(key)
-                )
-                setattr(cls, attr, key)
-                cls.attrs[attr] = key
-                break
-            else:
-                print("You should input digits.\n")
+class Common(BaseAttrs):
+    SETTING_FILE = str(project_pth / Path("cfg") / Path("common_settings.json") )
+    attrs = [ 
+        "temp_pth",
+        "track_results_pth"
+    ]
+    temp_pth : str 
+    track_results_pth : str
 
+Parameters.load_OT_type()
+Parameters.initiate(module_name=__name__)
+Parameters.save_info2json()
 
-Parameters.initiate()
+Common.initiate(module_name=__name__)
+Common.save_info2json()
+

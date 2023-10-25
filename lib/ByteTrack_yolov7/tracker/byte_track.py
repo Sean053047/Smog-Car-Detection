@@ -62,7 +62,7 @@ class STrack(BaseTrack):
         self.mean, self.covariance = self.kalman_filter.update(
             self.mean, self.covariance, self.tlwh_to_xyah(new_track.tlwh)
         )
-        self.tracklet_len = 0
+        # self.tracklet_len = 0
         self.state = TrackState.Tracked
         self.is_activated = True
         self.frame_id = frame_id
@@ -105,7 +105,6 @@ class STrack(BaseTrack):
         ret[2] *= ret[3]
         ret[:2] -= ret[2:] / 2
         return ret
-    
     
     def determine_cls_id(self):
         self.cls_id = max( self.cls_ids, key = self.cls_ids.count)

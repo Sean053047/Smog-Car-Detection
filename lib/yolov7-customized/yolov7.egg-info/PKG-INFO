@@ -1,0 +1,25 @@
+Metadata-Version: 2.1
+Name: yolov7
+Version: 0.1
+Summary: A Python package of concise yolov7
+Author: Chien-Yao Wang | Rebuild by Yi-Xiang Yang
+Project-URL: Bug Reports, */issues
+Project-URL: Source, *
+Requires-Python: >=3.7, <4
+Requires-Dist: numpy
+Requires-Dist: matplotlib
+Requires-Dist: opencv-python
+Requires-Dist: Pillow
+Requires-Dist: PyYAML
+Requires-Dist: requests
+Requires-Dist: scipy
+Requires-Dist: torch
+Requires-Dist: torchvision
+Requires-Dist: tqdm
+Requires-Dist: protobuf
+Requires-Dist: tensorboard
+Requires-Dist: pandas
+Requires-Dist: seaborn
+Requires-Dist: ipython
+Requires-Dist: psutil
+Requires-Dist: thop
