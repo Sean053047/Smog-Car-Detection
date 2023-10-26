@@ -12,7 +12,7 @@ import matching
 class STrack(BaseTrack, Track):
     shared_kalman = KalmanFilter()
     def __init__(self, tlwh, score, cls_id):
-        super(Track, self).__init__()
+        super().__init__()
         # wait activate
         self._tlwh = np.asarray(tlwh, dtype=np.float64)
         self.bboxes = dict()
@@ -174,7 +174,7 @@ class BYTETracker(object):
         self.max_time_lost = self.buffer_size
         self.kalman_filter = KalmanFilter()
         
-        self.tracks_per_frame = {}
+        self.tracks_per_frame: dict[int:list[int]] = {}
 
     def update(self, output_results, img_info, img_size):
         self.frame_id += 1

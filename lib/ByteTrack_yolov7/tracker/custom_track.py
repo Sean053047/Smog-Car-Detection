@@ -29,6 +29,21 @@ class Track(object):
 
 
     @ property
+    def start_frame(self):
+        return self.start_frame
+    @ start_frame.setter
+    def start_frame(self, v):
+        self.start_frame = v
+    
+    @ property
+    def end_frame(self):
+        return self.end_frame
+    @ end_frame.setter
+    def end_frame(self, v):
+        self.end_frame = v
+    
+    
+    @ property
     def tid(self):
         return self.track_id
     @ tid.setter
@@ -248,6 +263,7 @@ class Track(object):
     @staticmethod
     def combine(track1, track2):
         '''Combine track2 information to track1. If track1 has correspond info, it will skip that information.'''
+        print(f"Combine => track1: {track1} | track2: {track2}")
         track1.start_frame = track2.start_frame if track1.start_frame > track2.start_frame else track1.start_frame
         track1.end_frame = track2.end_frame if track1.end_frame < track2.end_frame else track1.end_frame
         for k,v in track2.bboxes.items():
