@@ -4,26 +4,17 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent))
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
-from byte_track import STrack
-import cv2 as cv
-
 from byte_config import Parameters as byte_par
 from string import punctuation
 ID2CLS = byte_par.ID2CLS
 
 class Track(object):
-    
     Lic_BBOX_THRESH = 0.6
     Lic_OCR_THRESH = 0.6
     SVM_ACCEPTABLE_MISS = 5
     CUT_FRAME_THRESH : int
 
-    def __init__(self, tid, cls_id, start_frame, end_frame, bboxes, CUT_FRAME_THRESH=300) -> None:
-        self.tid:int = tid
-        self.cls_id:int = cls_id
-        self.start_frame:int = start_frame
-        self.end_frame:int = end_frame
-        self.bboxes: dict[np.ndarray] = bboxes
+    def __init__(self) -> None:
         self.carID : str = ''
         self.smoke_start_frame : int = None
         self.smoke_end_frame : int = None
@@ -36,7 +27,17 @@ class Track(object):
         self.__license_current_dist : float = float("inf")
         self.__smoke_current_dist : float = float("inf")
 
-        self.CUT_FRAME_THRESH = CUT_FRAME_THRESH
+
+    @ property
+    def tid(self):
+        return self.track_id
+    @ tid.setter
+    def tid(self, v: int):
+        self.track_id = v
+    
+    @ classmethod
+    def set_CUT_FRAME_THRESH(cls, v : int):
+        cls.CUT_FRAME_THRESH = v
 
     def update_smoke_svm_preds(self, frame_id: int, pred: np.ndarray) -> None:
         self.smoke_svm_preds[frame_id] = pred
@@ -239,10 +240,10 @@ class Track(object):
 
         return start_frame , end_frame
                 
-    def __repr__(self) -> str:
-        # if hasattr(self, 'carID'):
-        #     return f"{ID2CLS[self.cls_id]: {self.carID}}"
-        return "OT_{}_{}_({}-{})".format(self.tid, ID2CLS[self.cls_id], self.start_frame, self.end_frame)
+    # def __repr__(self) -> str:
+    #     # if hasattr(self, 'carID'):
+    #     #     return f"{ID2CLS[self.cls_id]: {self.carID}}"
+    #     return "OT_{}_{}_({}-{})".format(self.tid, ID2CLS[self.cls_id], self.start_frame, self.end_frame)
     
     @staticmethod
     def combine(track1, track2):
@@ -265,96 +266,3 @@ class Track(object):
             track1.carID = track2.carID
         track1.determine_Smoke()
         
-
-def STracks2Tracks(Stracks: list[STrack], filter_out:bool = True, min_showing_times:int = 10, CUT_FRAME_THRESH=300):
-    '''Goal : Turn STracks to customized Tracks
-    par: 
-    1.  Stracks: list[STrack]
-    2.  filter_out: bool, default = True; 
-        When it was true, it will filter out the STrack with showing times less than min_times
-    3.  min_times: int, default = 5;
-        Means the minimum times which each STrack should have at least min_times.'''
-    tracks = []
-    for t in Stracks:
-        start_frame = t.start_frame
-        end_frame = t.end_frame
-        if filter_out and (end_frame-start_frame) < min_showing_times:
-            continue
-        tid = t.track_id
-        cls_id = t.cls_id
-        bboxes = t.bboxes
-        track = Track(tid, cls_id, start_frame, end_frame, bboxes, CUT_FRAME_THRESH)
-        tracks.append(track)
-    return tracks
-
-def update_tracks_per_frame(tracks:list[Track], tracks_per_frame:dict[int:list[int]]) ->dict[int:list[Track]]:
-    new_tracks_per_frame = dict()
-    for k,v in tracks_per_frame.items():
-        new_tracks_per_frame[k] = []
-        for tid in v:
-            for t in tracks:
-                if t.tid == tid:
-                    new_tracks_per_frame[k].append(t)
-                    break
-    for i, t in enumerate(tracks,start=1):
-        t.tid = i
-    
-    return new_tracks_per_frame
-
-def inference(vid_pth, tracks_per_frame):
-    def get_color(idx):
-        idx = idx * 3
-        color = ((37 * idx) % 255, (17 * idx) % 255, (29 * idx) % 255)
-        return color
-    
-
-    video = cv.VideoCapture(vid_pth)
-    frame_num = int(video.get(cv.CAP_PROP_FRAME_COUNT))
-    fps = video.get(cv.CAP_PROP_FPS)
-    cap_width, cap_height = video.get(cv.CAP_PROP_FRAME_WIDTH), video.get(cv.CAP_PROP_FRAME_HEIGHT)
-    
-
-    vid_writer = cv.VideoWriter(
-            byte_par.temp_pth + f"/MOT_{Path(vid_pth).name}",
-            cv.VideoWriter_fourcc(*"mp4v"),
-            fps,
-            (int(cap_width), int(cap_height)),
-        )
-
-    for frame_id in range(1, frame_num+1):
-        ret, frame = video.read()
-        if not ret:
-            print("Fail to read images.")
-            exit(0)
-
-        for t in tracks_per_frame[frame_id]:
-            intbox = tuple(map(int, t.bboxes[frame_id]))
-            id_text = '{}: {}'.format(ID2CLS[t.cls_id],int(t.tid))
-            color = get_color(abs(t.tid))
-            cv.rectangle(frame, intbox[0:2], intbox[2:4], color=color, thickness=3)
-            cv.putText(frame, id_text, (intbox[0], intbox[1]), cv.FONT_HERSHEY_PLAIN, 2, (0, 0, 255),
-                        thickness=2)   
-        vid_writer.write(frame)
-    vid_writer.release()
-    video.release()
-
-def combine_tracks(tracks: list[Track], tpf: dict[int:list[Track]]) -> tuple[list[Track], dict[int:list[Track]]]:
-    "Based on CarID. If they have same ID, combine them as one."
-    tpf_tid = {k:[t.tid for t in v] for k, v in tpf.items()}
-    new_tracks = []
-    for i,t1 in enumerate(tracks):
-        if t1.carID != "NULL":    
-            for t2 in tracks[i+1:]:
-                if t1 != t2 and t1.carID == t2.carID:
-                    Track.combine(t1,t2)
-                    # print(f"combine {t1} {t2}")
-                    st_f = t2.start_frame+1
-                    ed_f = t2.end_frame
-                    for fid in range(st_f,ed_f+1):
-                        tpf_tid[fid].remove(t2.tid)
-                        tpf_tid[fid].append(t1.tid)
-                        tpf_tid[fid] = sorted(tpf_tid[fid])
-                    tracks.remove(t2)
-        new_tracks.append(t1)
-                
-    return new_tracks, update_tracks_per_frame(new_tracks, tpf_tid)

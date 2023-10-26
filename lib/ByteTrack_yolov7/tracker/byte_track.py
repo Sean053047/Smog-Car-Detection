@@ -5,14 +5,14 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parent))
 
 from kalman_filter import KalmanFilter
-import matching
 from basetrack import BaseTrack, TrackState
-        
+from custom_track import Track
+import matching
 
-class STrack(BaseTrack):
+class STrack(BaseTrack, Track):
     shared_kalman = KalmanFilter()
     def __init__(self, tlwh, score, cls_id):
-        
+        super(Track, self).__init__()
         # wait activate
         self._tlwh = np.asarray(tlwh, dtype=np.float64)
         self.bboxes = dict()
@@ -169,6 +169,7 @@ class BYTETracker(object):
         self.args = args
         #self.det_thresh = args.track_thresh
         self.det_thresh = args.track_thresh + 0.1
+        Track.set_CUT_FRAME_THRESH(frame_rate)
         self.buffer_size = int(frame_rate / 30.0 * args.track_buffer)
         self.max_time_lost = self.buffer_size
         self.kalman_filter = KalmanFilter()
@@ -328,10 +329,7 @@ class BYTETracker(object):
             if t not in results:
                 results.append(t)
                 # alread_in.add(t)
-
         return results.copy(), self.tracks_per_frame.copy()
-
-
 
 def joint_stracks(tlista, tlistb):
     exists = {}
@@ -346,7 +344,6 @@ def joint_stracks(tlista, tlistb):
             res.append(t)
     return res
 
-
 def sub_stracks(tlista, tlistb):
     stracks = {}
     for t in tlista:
@@ -356,7 +353,6 @@ def sub_stracks(tlista, tlistb):
         if stracks.get(tid, 0):
             del stracks[tid]
     return list(stracks.values())
-
 
 def remove_duplicate_stracks(stracksa, stracksb):
     pdist = matching.iou_distance(stracksa, stracksb)

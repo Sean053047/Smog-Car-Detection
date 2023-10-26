@@ -32,7 +32,6 @@ stride = int(model.stride.max())  # model stride
 names = model.module.names if hasattr(model, "module") else model.names
 imgsz = byte_par.imgsz
 imgsz = check_img_size(imgsz, s=stride)
-fps = 30 
 old_img_w = old_img_h = imgsz
 old_img_b = 1
 
@@ -91,7 +90,7 @@ def inference(img: np.ndarray, tracks: list[STrack], frame_id: int, VideoWriter)
     im = plot_tracking(img, tlwhs, tids, cls_ids, frame_id=frame_id + 1)
     VideoWriter.write(im)
 
-def Yolov7_Track(vid_pth: str, save_inference=False):
+def Yolov7_Track(vid_pth: str, save_inference=False, save_data = False):
     if not "." + vid_pth.split(".")[-1] in VIDOE_EXT:
         return []
     else:
@@ -105,19 +104,20 @@ def Yolov7_Track(vid_pth: str, save_inference=False):
 
     cap = cv.VideoCapture(vid_pth)
     _, image = cap.read()
+    fps = int(cap.get(cv.CAP_PROP_FPS))
     CAP_IMG_HEIGHT, CAP_IMG_WIDTH = image.shape[:2]
     cap.release()
 
     if save_inference:
         vid_writer = cv.VideoWriter(
-            Common.temp_pth + f"/inference_{vid_name}.mp4",
+            Common.temp_pth + f"/OT_inference_{vid_name}.mp4",
             cv.VideoWriter_fourcc(*"mp4v"),
             fps,
             (int(CAP_IMG_WIDTH), int(CAP_IMG_HEIGHT)),
         )
 
     frame_id = 0
-    tracker = BYTETracker(byte_par, frame_rate=30)
+    tracker = BYTETracker(byte_par, frame_rate=fps)
     
     for path, img, cap_img, vid_cap in datasets:
         img = torch.from_numpy(img).to(device)
@@ -141,10 +141,9 @@ def Yolov7_Track(vid_pth: str, save_inference=False):
         with torch.no_grad():
             pred = model(img, augment = byte_par.augment)[0]
         pred = non_max_suppression(pred, byte_par.conf_thresh, byte_par.iou_thresh)[0]
-        current_tracks = tracker.update(
+        current_tracks:list[STrack] = tracker.update(
             pred, [CAP_IMG_HEIGHT, CAP_IMG_WIDTH], (old_img_h, old_img_w)
         )
-
         if save_inference:
             inference(cap_img, current_tracks, frame_id, vid_writer)
         frame_id += 1
@@ -155,31 +154,32 @@ def Yolov7_Track(vid_pth: str, save_inference=False):
         vid_writer.release()
 
     stracks, stracks_per_frame = tracker.output_all_tracks()
-
-    with open(str(output_pth) + f"/stracks:{vid_name}.pkl", "wb") as file:
-        pickle.dump(stracks, file)
-    with open(str(output_pth) + f"/stpf:{vid_name}.pkl", "wb") as file:
-        pickle.dump(stracks_per_frame, file)
-    print(f"Save stracks to {output_pth}/stracks:{vid_name}.pkl")
-    print(f"Save stracks_per_frame to {output_pth}/stpf:{vid_name}.pkl")
+    if save_data:
+        with open(str(output_pth) + f"/stracks:{vid_name}.pkl", "wb") as file:
+            pickle.dump(stracks, file)
+        with open(str(output_pth) + f"/stpf:{vid_name}.pkl", "wb") as file:
+            pickle.dump(stracks_per_frame, file)
+        print(f"Save stracks to {output_pth}/stracks:{vid_name}.pkl")
+        print(f"Save stracks_per_frame to {output_pth}/stpf:{vid_name}.pkl")
+    
     return stracks, stracks_per_frame
 
 
 if __name__ == "__main__":
-    from tracker import Track, STracks2Tracks, update_tracks_per_frame
+    # from tracker import Track, STracks2Tracks, update_tracks_per_frame
     t = time.time()
     vid_pth = "/mnt/HDD-500GB/Smog-Car-Detection/data/SmogCar/SmogCar_15.mp4"
-    Yolov7_Track(vid_pth, save_inference=True)
-    vid_name = vid_pth.split("/")[-1].split(".")[0]
+    Yolov7_Track(vid_pth, save_inference=True, save_data=True)
+    # vid_name = vid_pth.split("/")[-1].split(".")[0]
 
 
-    with open(str(output_pth) + f"/stracks:{vid_name}.pkl", "rb") as file:
-        Stracks = pickle.load(file)
-    with open(str(output_pth) + f"/stpf:{vid_name}.pkl", "rb") as file:
-        tracks_per_frame = pickle.load(file)
+    # with open(str(output_pth) + f"/stracks:{vid_name}.pkl", "rb") as file:
+    #     Stracks = pickle.load(file)
+    # with open(str(output_pth) + f"/stpf:{vid_name}.pkl", "rb") as file:
+    #     tracks_per_frame = pickle.load(file)
 
-    tracks: list[Track] = STracks2Tracks(Stracks)
-    tracks_per_frame: dict[int : list[Track]] = update_tracks_per_frame(
-        tracks, tracks_per_frame
-    )
-    print(f"cost time: {time.time() -t }")
+    # tracks: list[Track] = STracks2Tracks(Stracks)
+    # tracks_per_frame: dict[int : list[Track]] = update_tracks_per_frame(
+    #     tracks, tracks_per_frame
+    # )
+    # print(f"cost time: {time.time() -t }")
