@@ -12,37 +12,21 @@ class Track(object):
     Lic_BBOX_THRESH = 0.6
     Lic_OCR_THRESH = 0.6
     SVM_ACCEPTABLE_MISS = 5
-    CUT_FRAME_THRESH : int
+    CUT_FRAME_THRESH : int = 30
 
     def __init__(self) -> None:
+        self.CUT_FRAME_THRESH = Track.CUT_FRAME_THRESH
+        
         self.carID : str = ''
         self.smoke_start_frame : int = None
         self.smoke_end_frame : int = None
         self.is_smoke : bool = False
-
         self.smoke_svm_preds : dict[int:int] = dict()
         self.smoke_yolo_preds: dict[int:np.ndarray] = dict()
         self.license_votes : dict[ int: (str, float, float)]= dict()  # ? list["CarID", license_conf, bbox_conf]
-        
         self.__license_current_dist : float = float("inf")
         self.__smoke_current_dist : float = float("inf")
 
-
-    @ property
-    def start_frame(self):
-        return self.start_frame
-    @ start_frame.setter
-    def start_frame(self, v):
-        self.start_frame = v
-    
-    @ property
-    def end_frame(self):
-        return self.end_frame
-    @ end_frame.setter
-    def end_frame(self, v):
-        self.end_frame = v
-    
-    
     @ property
     def tid(self):
         return self.track_id
@@ -260,25 +244,23 @@ class Track(object):
     #     #     return f"{ID2CLS[self.cls_id]: {self.carID}}"
     #     return "OT_{}_{}_({}-{})".format(self.tid, ID2CLS[self.cls_id], self.start_frame, self.end_frame)
     
-    @staticmethod
-    def combine(track1, track2):
-        '''Combine track2 information to track1. If track1 has correspond info, it will skip that information.'''
-        print(f"Combine => track1: {track1} | track2: {track2}")
-        track1.start_frame = track2.start_frame if track1.start_frame > track2.start_frame else track1.start_frame
-        track1.end_frame = track2.end_frame if track1.end_frame < track2.end_frame else track1.end_frame
-        for k,v in track2.bboxes.items():
-            if track1.bboxes.get(k, None) is not None:
+    def involve(self, t2):
+        '''Combine t2 information to self. If self has correspond info, it will skip that information.'''
+        self.start_frame = t2.start_frame if self.start_frame > t2.start_frame else self.start_frame
+        self.end_frame = t2.end_frame if self.end_frame < t2.end_frame else self.end_frame
+        for k,v in t2.bboxes.items():
+            if self.bboxes.get(k, None) is not None:
                 continue
-            track1.bboxes[k] = v 
-        for k,v in track2.smoke_yolo_preds.items():
-            if track1.smoke_yolo_preds.get(k, None) is not None:
+            self.bboxes[k] = v 
+        for k,v in t2.smoke_yolo_preds.items():
+            if self.smoke_yolo_preds.get(k, None) is not None:
                 continue
-            track1.smoke_yolo_preds[k] = v
-        for k,v in track2.smoke_svm_preds.items():
-            if track1.smoke_svm_preds.get(k, None) is not None:
+            self.smoke_yolo_preds[k] = v
+        for k,v in t2.smoke_svm_preds.items():
+            if self.smoke_svm_preds.get(k, None) is not None:
                 continue
-            track1.smoke_svm_preds[k] = v
-        if track1.carID == "":
-            track1.carID = track2.carID
-        track1.determine_Smoke()
+            self.smoke_svm_preds[k] = v
+        if self.carID == "":
+            self.carID = t2.carID
+        self.determine_Smoke()
         

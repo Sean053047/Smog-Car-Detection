@@ -8,7 +8,7 @@ from kalman_filter import KalmanFilter
 from basetrack import BaseTrack, TrackState
 from custom_track import Track
 import matching
-
+from numba import jit
 class STrack(BaseTrack, Track):
     shared_kalman = KalmanFilter()
     def __init__(self, tlwh, score, cls_id):
@@ -152,6 +152,7 @@ class STrack(BaseTrack, Track):
         return ret
 
     def __repr__(self):
+        
         return 'OT_{}_({}-{})'.format(self.track_id, self.start_frame, self.end_frame)
 
     @staticmethod
@@ -161,6 +162,8 @@ class STrack(BaseTrack, Track):
 
 class BYTETracker(object):
     def __init__(self, args, frame_rate=30):
+        Track.set_CUT_FRAME_THRESH(frame_rate)
+
         self.tracked_stracks = []  # type: list[STrack]
         self.lost_stracks = []  # type: list[STrack]
         self.removed_stracks = []  # type: list[STrack]
@@ -169,12 +172,11 @@ class BYTETracker(object):
         self.args = args
         #self.det_thresh = args.track_thresh
         self.det_thresh = args.track_thresh + 0.1
-        Track.set_CUT_FRAME_THRESH(frame_rate)
         self.buffer_size = int(frame_rate / 30.0 * args.track_buffer)
         self.max_time_lost = self.buffer_size
         self.kalman_filter = KalmanFilter()
         
-        self.tracks_per_frame: dict[int:list[int]] = {}
+        # self.tracks_per_frame: dict[int:list[int]] = {}
 
     def update(self, output_results, img_info, img_size):
         self.frame_id += 1
@@ -312,24 +314,35 @@ class BYTETracker(object):
         # get scores of lost tracks
         output_stracks = [track for track in self.tracked_stracks if track.is_activated]
 
-        self.tracks_per_frame[self.frame_id] = []
-        for t in sorted(output_stracks, key=STrack.return_track_id):
-            self.tracks_per_frame[self.frame_id].append(t.track_id)
+        # self.tracks_per_frame[self.frame_id] = []
+        # for t in sorted(output_stracks, key=STrack.return_track_id):
+        #     self.tracks_per_frame[self.frame_id].append(t.track_id)
         
         return output_stracks
 
-    def output_all_tracks(self):
+    def output_all_tracks(self, fdif_thresh):
+        '''fdif_thresh : Difference between start_frame and end_frame >= fdif_thresh ( at least 1)'''
+        fdif_thresh = 1 if fdif_thresh < 1 else fdif_thresh
         total_stracks = self.tracked_stracks + self.removed_stracks + self.lost_stracks
         total_stracks = sorted(total_stracks, key = STrack.return_track_id)
         
+        tpf_tid = dict()
         # ? Check if there is any duplicated track in the list.
+        i = 1 
         results = []
         for t in total_stracks:
+            if t.end_frame - t.start_frame < fdif_thresh:
+                continue
             t.determine_cls_id()
             if t not in results:
                 results.append(t)
-                # alread_in.add(t)
-        return results.copy(), self.tracks_per_frame.copy()
+                t.tid = i 
+                i += 1
+                for fid in t.bboxes.keys():
+                    if tpf_tid.get(fid, None) is None:
+                        tpf_tid[fid] = list()
+                    tpf_tid[fid].append(t.tid)
+        return results.copy(), tpf_tid
 
 def joint_stracks(tlista, tlistb):
     exists = {}

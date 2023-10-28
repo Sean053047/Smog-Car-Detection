@@ -29,7 +29,6 @@ def inference(vid_pth, tracks_per_frame):
         color = ((37 * idx) % 255, (17 * idx) % 255, (29 * idx) % 255)
         return color
     
-
     video = cv.VideoCapture(vid_pth)
     frame_num = int(video.get(cv.CAP_PROP_FRAME_COUNT))
     fps = video.get(cv.CAP_PROP_FPS)
@@ -61,13 +60,20 @@ def inference(vid_pth, tracks_per_frame):
 
 def combine_tracks(tracks: list[STrack], tpf_tid: dict[int:list[STrack]], link=False) -> tuple[list[STrack], dict[int:list]]:
     "Based on CarID. If they have same ID, combine them as one."
+
     new_tracks = []
+    tid_update_bool = False
+    tid_record = None
     for i,t1 in enumerate(tracks):
+        if tid_update_bool and t1.tid > tid_record:
+            t1.tid = tid_record
+            tid_record += 1
+        
         if t1.carID != "NULL":    
             for t2 in tracks[i+1:]:
                 if t1 != t2 and t1.carID == t2.carID:
-                    STrack.combine(t1,t2)
-                    # print(f"combine {t1} {t2}")
+                    print(f"involve {t2} into {t1}...... ")
+                    t1.involve(t2)
                     st_f = t2.start_frame+1
                     ed_f = t2.end_frame
                     for fid in range(st_f,ed_f+1):
@@ -75,6 +81,9 @@ def combine_tracks(tracks: list[STrack], tpf_tid: dict[int:list[STrack]], link=F
                         tpf_tid[fid].append(t1.tid)
                         tpf_tid[fid] = sorted(tpf_tid[fid])
                     tracks.remove(t2)
+                    if not tid_update_bool:
+                        tid_update_bool = True
+                        tid_record = t2.tid
         new_tracks.append(t1)
     if link :
         return new_tracks, update_tracks_per_frame(new_tracks, tpf_tid)

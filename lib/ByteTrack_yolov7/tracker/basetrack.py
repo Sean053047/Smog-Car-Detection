@@ -30,6 +30,11 @@ class BaseTrack(object):
     @property
     def end_frame(self):
         return self.frame_id
+    
+    @end_frame.setter
+    def end_frame(self, v):
+        self.frame_id = v
+
 
     @staticmethod
     def reset_count():

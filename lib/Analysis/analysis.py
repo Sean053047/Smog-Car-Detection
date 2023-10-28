@@ -187,15 +187,16 @@ def analysis(vid_pth: str, multi_process:bool = False):
         return None
     output_pth = Path(Common.track_results_pth)
     vid_name = Path(vid_pth).name.split(".")[0]
-    tracker = BYTETracker(byte_par, frame_rate = 30)
+    CAP_HEIGHT, CAP_WIDTH, FRAMES, FPS =  get_video_info(vid_pth)    
+    
+    tracker = BYTETracker(byte_par, frame_rate = FPS)
     
     if not multi_process:
         datasets = LoadImages(vid_pth, img_size=imgsz, stride=stride)
         for frame_id, (path, img, cap_img, vid_cap) in enumerate(datasets, 1):
-            CAP_IMG_HEIGHT, CAP_IMG_WIDTH = cap_img.shape[:2]
-            byte_preds= yolo_predict(img , CAP_IMG_HEIGHT , CAP_IMG_WIDTH, 'OT')      
+            byte_preds= yolo_predict(img , CAP_HEIGHT , CAP_WIDTH, 'OT')      
             current_tracks = tracker.update(
-                byte_preds, [CAP_IMG_HEIGHT, CAP_IMG_WIDTH], (old_img_h, old_img_w)
+                byte_preds, [CAP_HEIGHT, CAP_WIDTH], (old_img_h, old_img_w)
             )            
             svm_smoke_detect(cap_img, frame_id, current_tracks)
             smoke_preds, OTs = yolo_smoke_detect(image =img, cap_img=cap_img, frame_id=frame_id, tracks = current_tracks)
@@ -204,13 +205,11 @@ def analysis(vid_pth: str, multi_process:bool = False):
     else:
         pass
 
-    tracks, tpf_tid = tracker.output_all_tracks()
+    tracks, tpf_tid = tracker.output_all_tracks(fdif_thresh=10)
     # ? Information allocate
     for t in tracks:
         t.determine_CarID()
         t.determine_Smoke()
-    
-    # Todo
     tracks, tpf_tid = combine_tracks(tracks, tpf_tid)
 
     # ? Dump information pickle files.
@@ -224,7 +223,10 @@ def analysis(vid_pth: str, multi_process:bool = False):
 if __name__ == "__main__":
     vid_pth = "/mnt/HDD-500GB/Smog-Car-Detection/data/SmogCar/SmogCar_15.mp4"
     height, width, frame_count, fps = get_video_info(vid_pth)
+    import time
+    t = time.time()
     analysis(vid_pth,  False)
+    print(time.time() - t) 
     # output_pth = Path(Common.track_results_pth)
     # vid_name = Path(vid_pth).name.split(".")[0]
     # updated_tpf_pth = output_pth / Path(f"updated_tpf:{vid_name}.pkl")
@@ -233,7 +235,5 @@ if __name__ == "__main__":
     #     tracks = pickle.load(file)
     # with open(str(updated_tpf_pth), 'rb') as file:
     #     tpf_tid = pickle.load( file)
-
-    # print(len(tracks))
-    # tracks, tpf_tid = combine_tracks(tracks, tpf_tid)
-    # print(len(tracks))
+    # print(tracks)
+    # print(tpf_tid)
