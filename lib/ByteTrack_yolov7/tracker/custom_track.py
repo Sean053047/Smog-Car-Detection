@@ -12,7 +12,7 @@ class Track(object):
     Lic_BBOX_THRESH = 0.6
     Lic_OCR_THRESH = 0.6
     SVM_ACCEPTABLE_MISS = 5
-    CUT_FRAME_THRESH : int = 30
+    CUT_FRAME_THRESH : int 
 
     def __init__(self) -> None:
         self.CUT_FRAME_THRESH = Track.CUT_FRAME_THRESH
@@ -137,6 +137,8 @@ class Track(object):
             if (np.array(svm_preds)<1).all():
                 return
             svm_indx, svm_chg_indx = self.get_svm_indx_chg()
+            # print(svm_indx, svm_chg_indx)
+            # print(svm_preds)
             bst_indx = 0
             if len(svm_chg_indx) == 1:
                 if (svm_chg_indx[bst_indx] - svm_indx[0])/self.CUT_FRAME_THRESH < 0.1:
@@ -149,8 +151,8 @@ class Track(object):
             else:
                 frame_diff =0
                 for i in range(1,len(svm_chg_indx),2):
-                    print(svm_chg_indx)
-                    print(self, len(svm_chg_indx), i,' ', end="")
+                    # print(svm_chg_indx)
+                    # print(self, len(svm_chg_indx), i,' ', end="")
                     diff = svm_chg_indx[i] - svm_chg_indx[i-1]
                     bst_indx = i if diff > frame_diff else bst_indx
                     frame_diff = diff if diff > frame_diff else frame_diff
@@ -160,7 +162,8 @@ class Track(object):
                     return
                 else:
                     # Todo: finish 
-                    center_indx = int((svm_chg_indx[bst_indx]+svm_chg_indx[bst_indx+1])/2)
+                    # * If it is the final index
+                    center_indx = int(svm_chg_indx[bst_indx]) if bst_indx == len(svm_chg_indx) -1 else int((svm_chg_indx[bst_indx]+svm_chg_indx[bst_indx+1])/2)
                     start_frame = center_indx - int(self.CUT_FRAME_THRESH/2)
                     end_frame = center_indx + int(self.CUT_FRAME_THRESH/2)+1
                     self.is_smoke = True

@@ -56,7 +56,7 @@ old_img_b = 1
 # * Load PaddleOCR setting
 ocr = PaddleOCR(use_angle_cls = True, lang='en', use_gpu = True, show_log= False)
 
-def yolo_predict(image: torch.tensor, CAP_HEIGHT:int, CAP_WIDTH:int, model_type:str):
+def yolo_predict(image: torch.tensor, model_type:str):
     global smoke_model, license_model,  old_img_h, old_img_w, old_img_b  
     model = smoke_model if model_type == "smoke" else license_model if model_type == 'license' else OT_model if model_type == "OT" else None
     if model == None:
@@ -107,7 +107,7 @@ def yolo_smoke_detect(
     image: torch.tensor, cap_img: np.ndarray, frame_id: int, tracks: list[STrack]
 ):
     CAP_HEIGHT, CAP_WIDTH = cap_img.shape[:2]
-    preds = yolo_predict(image, CAP_HEIGHT, CAP_WIDTH, 'smoke')
+    preds = yolo_predict(image, 'smoke')
     preds = resize_preds_bbox(preds, old_img_h, old_img_w, CAP_HEIGHT, CAP_WIDTH)
     record_bbox = torch.tensor([ calibrate_bbox( t.bboxes[frame_id], height=CAP_HEIGHT, width=CAP_WIDTH)for t in tracks],
         device=device,
@@ -155,7 +155,7 @@ def license_allocate(
     image: torch.tensor, cap_img: np.ndarray, frame_id: int, tracks:list[STrack]
 ): 
     CAP_HEIGHT, CAP_WIDTH = cap_img.shape[:2]
-    preds = yolo_predict(image, CAP_HEIGHT, CAP_WIDTH , 'license')
+    preds = yolo_predict(image , 'license')
     preds = resize_preds_bbox(preds, old_img_h, old_img_w, CAP_HEIGHT, CAP_WIDTH)
 
     record_bbox = torch.tensor([calibrate_bbox(t.bboxes[frame_id], height=CAP_HEIGHT, width=CAP_WIDTH) for t in tracks],
@@ -194,7 +194,7 @@ def analysis(vid_pth: str, multi_process:bool = False):
     if not multi_process:
         datasets = LoadImages(vid_pth, img_size=imgsz, stride=stride)
         for frame_id, (path, img, cap_img, vid_cap) in enumerate(datasets, 1):
-            byte_preds= yolo_predict(img , CAP_HEIGHT , CAP_WIDTH, 'OT')      
+            byte_preds= yolo_predict(img , 'OT')      
             current_tracks = tracker.update(
                 byte_preds, [CAP_HEIGHT, CAP_WIDTH], (old_img_h, old_img_w)
             )            
@@ -206,7 +206,15 @@ def analysis(vid_pth: str, multi_process:bool = False):
         pass
 
     tracks, tpf_tid = tracker.output_all_tracks(fdif_thresh=10)
+    tracks : list[STrack]
     # ? Information allocate
+    # updated_tpf_pth = output_pth / Path(f"updated_tpf:{vid_name}.pkl")
+    # updated_tracks_pth = output_pth / Path(f"updated_tracks:{vid_name}.pkl")
+    # with open(str(updated_tracks_pth), 'wb') as file:
+    #     pickle.dump(tracks, file)
+    # with open(str(updated_tpf_pth), 'wb') as file:
+    #     pickle.dump(tpf_tid, file)
+
     for t in tracks:
         t.determine_CarID()
         t.determine_Smoke()
@@ -219,20 +227,35 @@ def analysis(vid_pth: str, multi_process:bool = False):
         pickle.dump(tracks, file)
     with open(str(updated_tpf_pth), 'wb') as file:
         pickle.dump(tpf_tid, file)
-    
+
+    return tracks, tpf_tid
+
 if __name__ == "__main__":
-    vid_pth = "/mnt/HDD-500GB/Smog-Car-Detection/data/SmogCar/SmogCar_15.mp4"
-    height, width, frame_count, fps = get_video_info(vid_pth)
+    # vid_pth = "/mnt/HDD-500GB/Smog-Car-Detection/data/SmogCar/SmogCar_1.mp4"
+    # height, width, frame_count, fps = get_video_info(vid_pth)
     import time
-    t = time.time()
-    analysis(vid_pth,  False)
-    print(time.time() - t) 
-    # output_pth = Path(Common.track_results_pth)
-    # vid_name = Path(vid_pth).name.split(".")[0]
-    # updated_tpf_pth = output_pth / Path(f"updated_tpf:{vid_name}.pkl")
-    # updated_tracks_pth = output_pth / Path(f"updated_tracks:{vid_name}.pkl")
-    # with open(str(updated_tracks_pth), 'rb') as file:
-    #     tracks = pickle.load(file)
+    B = True
+    if B:
+        for i in range(1,17):
+            i = 17
+            t = time.time()
+            print(f"Start : SmogCar_{i}.mp4")
+            vid_pth = f"/mnt/HDD-500GB/Smog-Car-Detection/data/SmogCar/SmogCar_{i}.mp4"
+            analysis(vid_pth,  False)
+            print(f"Finish : SmogCar_{i}.mp4 | Cost time: {time.time()-t}\n")
+    else:
+        vid_pth = "/mnt/HDD-500GB/Smog-Car-Detection/data/SmogCar/SmogCar_1.mp4"
+        output_pth = Path(Common.track_results_pth)
+        vid_name = Path(vid_pth).name.split(".")[0]
+        updated_tpf_pth = output_pth / Path(f"updated_tpf:{vid_name}.pkl")
+        updated_tracks_pth = output_pth / Path(f"updated_tracks:{vid_name}.pkl")
+        with open(str(updated_tracks_pth), 'rb') as file:
+            tracks: list[STrack] = pickle.load(file)
+            t = tracks[6]
+            t.determine_CarID()
+            t.determine_Smoke()
+            # print(t,'|', t.carID, '|', t.license_votes)
+            # t.determine_Smoke()
     # with open(str(updated_tpf_pth), 'rb') as file:
     #     tpf_tid = pickle.load( file)
     # print(tracks)
