@@ -59,9 +59,7 @@ class Common(BaseAttrs):
     temp_pth : str 
     track_results_pth : str
 
-Parameters.initiate(module_name=__name__)
-Parameters.save_info2json()
+Parameters.main(module_name= __name__)
 
-Common.initiate(module_name= __name__)
-Common.save_info2json()
+Common.main(module_name= __name__)
 

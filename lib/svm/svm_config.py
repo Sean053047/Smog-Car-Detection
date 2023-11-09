@@ -9,10 +9,11 @@ class Training_info(BaseAttrs):
     height : int
     width_min : int 
     height_min : int
-    num_label : 2
+    num_label : int 
     label : dict[str: int]
     ID2CLS : dict[int:str]
     CLS2ID : dict[str:int]
+
 class Parameters(BaseAttrs):
     SETTING_FILE = str(
         project_pth / Path("cfg") / Path("svm_settings.json")
@@ -27,7 +28,7 @@ class Parameters(BaseAttrs):
     def update_label(cls):
         cls.Training_info.CLS2ID = cls.Training_info.label
         cls.Training_info.ID2CLS = {v: k for k, v in cls.Training_info.CLS2ID.items()}
-        
-Parameters.initiate(module_name=__name__)
-Parameters.save_info2json()
+
+
+Parameters.main(module_name=__name__)
 Parameters.update_label()

@@ -18,6 +18,11 @@ class BaseAttrs:
     file_classes : dict
     
     @classmethod
+    def main(cls, module_name = __name__):
+        cls.initiate(module_name=module_name)
+        cls.save_info2json()
+
+    @classmethod
     def initiate(cls, attrs_dict=None, module_name = __name__) -> None:
         cls.UPDATE = False
         cls.already_load = set()    
